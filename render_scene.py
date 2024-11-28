@@ -4,13 +4,14 @@ from manopth import demo
 import open3d as o3d
 import numpy as np
 import yaml
+import os
 
-DEXYCB_PATH = 'D:/dexycb'
+DEXYCB_PATH = os.environ.get('DEX_YCB_DIR', 'D:/dexycb')
 DEXYCB_DATASET = '20200709-subject-01/20200709_141754'
 DEXYCB_CAMERA = '932122060861'
 DEXYCB_FRAME = '000071'
 
-MANO_MODELS_PATH = 'D:/mano/models'
+MANO_MODELS_PATH = os.environ.get('MANO_MODELS_PATH', 'D:/mano/models')
 
 _YCB_CLASSES = {
      1: '002_master_chef_can',
