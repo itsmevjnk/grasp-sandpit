@@ -49,11 +49,14 @@ mano_layer = ManoLayer(mano_root=MANO_MODELS_PATH, use_pca=True, ncomps=45, flat
 faces_np = mano_layer.th_faces.detach().cpu().numpy()
 
 # create object
-obj_mesh = o3d.io.read_triangle_mesh(f'{DEXYCB_PATH}/models/{grasped_object}/textured.obj')
+obj_mesh = o3d.t.io.read_triangle_mesh(f'{DEXYCB_PATH}/models/{grasped_object}/textured.obj')
 obj_tf = np.vstack((labels['pose_y'][ycb_grasp_idx], np.array([0, 0, 0, 1], dtype=np.float32)))
 # obj_tf[1] *= -1; obj_tf[2] *= -1
 obj_mesh = obj_mesh.transform(obj_tf)
-obj_mesh.compute_vertex_normals(); obj_mesh.paint_uniform_color([0, 1, 0])
+obj_mesh.compute_vertex_normals()#; obj_mesh.paint_uniform_color([0, 1, 0])
+# paint_uniform_color(obj_mesh, [0, 1, 0])
+
+# o3d.visualization.draw(obj_mesh)
 
 # create hand
 pose_m = torch.from_numpy(labels['pose_m'])
@@ -61,10 +64,14 @@ hand_verts, hand_joints = mano_layer(pose_m[:, 0:48], torch.from_numpy(np.array(
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
 hand_verts /= 1000 # important
 verts_np = hand_verts[0].detach().cpu().numpy() # first one in batch
-hand_mesh = o3d.geometry.TriangleMesh()
-hand_mesh.vertices = o3d.utility.Vector3dVector(verts_np)
-hand_mesh.triangles = o3d.utility.Vector3iVector(faces_np)
+hand_mesh = o3d.t.geometry.TriangleMesh()
 # hand_mesh = hand_mesh.translate(labels['pose_m'][0, 48:51])
-hand_mesh.compute_vertex_normals(); hand_mesh.paint_uniform_color([0.25, 0.25, 0.25])
+hand_mesh.vertex.positions = o3d.core.Tensor(verts_np)
+hand_mesh.triangle.indices = o3d.core.Tensor(faces_np)
+hand_mesh.compute_vertex_normals()#; hand_mesh.paint_uniform_color([0.25, 0.25, 0.25])
 
-o3d.visualization.draw_geometries([obj_mesh, hand_mesh])
+o3d.visualization.draw([obj_mesh, hand_mesh])
+
+intersection = obj_mesh.boolean_intersection(hand_mesh)
+# intersection.paint_uniform_color([1.0, 0.0, 0.0])
+o3d.visualization.draw([intersection])
