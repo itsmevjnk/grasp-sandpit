@@ -36,7 +36,13 @@ hand_mesh.vertices = o3d.utility.Vector3dVector(verts_np)
 hand_mesh.triangles = o3d.utility.Vector3iVector(faces_np)
 hand_mesh.compute_vertex_normals()
 
-o3d.visualization.draw_geometries([o3d.geometry.LineSet.create_from_triangle_mesh(hand_mesh)])
+# hand_wire = o3d.geometry.LineSet.create_from_triangle_mesh(hand_mesh)
+# o3d.visualization.draw_geometries([hand_wire])
+
+# joint_annotations = []
+# for joint in range(21):
+#     print(f'showing joint {joint}')
+#     o3d.visualization.draw_geometries([hand_wire, o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=hand_joints[0,joint])])
 
 # colour mapping
 palette = [
@@ -49,16 +55,18 @@ palette = [
     ]
 ]
 
+frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
 # show each segment
 seg_meshes = []
 for seg in colours:
     mesh = o3d.geometry.TriangleMesh()
     mesh.vertices = hand_mesh.vertices
     mesh.triangles = o3d.utility.Vector3iVector(faces_np[colours[seg]])
+    mesh.remove_unreferenced_vertices() # clean up vertices
     mesh.compute_vertex_normals(); mesh.paint_uniform_color(palette[seg])
     seg_meshes.append(mesh)
 
-o3d.visualization.draw_geometries(seg_meshes)
+# o3d.visualization.draw_geometries(seg_meshes + [frame])
 
 # colours:
 # 0 = ring MCP-PIP
@@ -68,8 +76,8 @@ o3d.visualization.draw_geometries(seg_meshes)
 # 4 = middle DIP-TIP
 # 5 = ring DIP-TIP
 # 6 = pinky DIP-TIP
-# 7 = palm
-# 8 = thumb CMC-MCP
+# 7 = thumb CMC-MCP
+# 8 = palm
 # 9 = thumb MCP-IP
 # 10 = index MCP-PIP
 # 11 = index DIP-TIP
@@ -77,3 +85,48 @@ o3d.visualization.draw_geometries(seg_meshes)
 # 13 = pinky PIP-DIP
 # 14 = middle PIP-DIP
 # 15 = ring PIP-DIP
+seg_names = ['ring1', 'index2', 'pinky1', 'middle1', 'middle3', 'ring3', 'pinky3', 'thumb1', 'palm', 'thumb2', 'index1', 'index3', 'thumb3', 'pinky2', 'middle2', 'ring2']
+
+seg_map = list(enumerate([13, 6, 17, 9, 11, 15, 19, 1, 0, 2, 5, 7, 3, 18, 10, 14]))
+
+# frame_meshes = []
+# seg_wires = []
+# for seg, joint in seg_map:
+#     seg_wires.append(o3d.geometry.LineSet.create_from_triangle_mesh(seg_meshes[seg]))
+#     frame_meshes.append(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=hand_joints[0,joint]))
+
+# o3d.visualization.draw_geometries(seg_wires + frame_meshes + [frame])
+
+# demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
+
+def write_vrml(name: str, mesh: o3d.geometry.TriangleMesh):
+    with open(name, 'w') as f:
+        f.write('#VRML V2.0 utf8\n#material plastic\n#mass 150.0\n\n') # initial lines
+
+        f.write('Shape {\n\tgeometry IndexedFaceSet {\n')
+
+        # coord Coordinate
+        f.write('\t\tcoord Coordinate {\n\t\t\tpoint [\n')
+        for point in np.asarray(mesh.vertices).tolist():
+            f.write('\t\t\t\t' + ' '.join(str(x) for x in point) + '\n')
+        f.write('\t\t\t]\n\t\t}\n\t\tcoordIndex [\n')
+        for triangle in np.asarray(mesh.triangles).tolist():
+            f.write('\t\t\t' + ' '.join(str(x) for x in triangle) + ' -1\n')
+        f.write('\t\t]\n\t\tnormal Normal {\n\t\t\tvector [\n')
+        for vect in np.asarray(mesh.vertex_normals).tolist():
+            f.write('\t\t\t\t' + ' '.join(str(x) for x in vect) + '\n')
+        f.write('\t\t\t]\n\t\t}\n')
+
+        f.write('\t}\n}\n')
+
+
+# translate hand parts back
+for seg, joint in seg_map:
+    pos = hand_joints[0,joint]
+    print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
+    seg_meshes[seg].translate(-pos)
+    print(f' - new centre: {seg_meshes[seg].get_center()}')
+    # o3d.io.write_triangle_mesh(f'{seg_names[seg]}.obj', seg_meshes[seg], print_progress=True)
+    write_vrml(f'{seg_names[seg]}.wrl', seg_meshes[seg])
+
+# o3d.visualization.draw_geometries(seg_meshes + [frame])
