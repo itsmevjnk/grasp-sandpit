@@ -6,6 +6,7 @@ import numpy as np
 import yaml
 import os
 import time
+import shutil
 
 DEXYCB_PATH = os.environ.get('DEX_YCB_DIR', 'D:/dexycb')
 DEXYCB_SUBJECT = 'mano_20200514_142106_subject-09_right'
@@ -28,7 +29,7 @@ colours = { id: np.where(face_colours == id) for id in np.unique(face_colours) }
 pose_m = torch.zeros(1, 45 + 3)
 hand_verts, hand_joints = mano_layer(pose_m, torch.from_numpy(np.array([mano_betas], dtype=np.float32)))
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
-hand_verts /= 1000; hand_joints /= 1000 # important (for DexYCB at least - TODO: test with RGB-to-MANO)
+# hand_verts /= 1000; hand_joints /= 1000 # important (for DexYCB at least - TODO: test with RGB-to-MANO)
 verts_np = hand_verts[0].detach().cpu().numpy() # first one in batch
 hand_mesh = o3d.geometry.TriangleMesh()
 # hand_mesh = hand_mesh.translate(labels['pose_m'][0, 48:51])
@@ -85,17 +86,17 @@ for seg in colours:
 # 13 = pinky PIP-DIP
 # 14 = middle PIP-DIP
 # 15 = ring PIP-DIP
-seg_names = ['ring1', 'index2', 'pinky1', 'middle1', 'middle3', 'ring3', 'pinky3', 'thumb1', 'palm', 'thumb2', 'index1', 'index3', 'thumb3', 'pinky2', 'middle2', 'ring2']
+seg_names = ['ring1', 'index2', 'pinky1', 'mid1', 'mid3', 'ring3', 'pinky3', 'thumb1', 'palm', 'thumb2', 'index1', 'index3', 'thumb3', 'pinky2', 'mid2', 'ring2']
 
 seg_map = list(enumerate([13, 6, 17, 9, 11, 15, 19, 1, 0, 2, 5, 7, 3, 18, 10, 14]))
 
-# frame_meshes = []
-# seg_wires = []
-# for seg, joint in seg_map:
-#     seg_wires.append(o3d.geometry.LineSet.create_from_triangle_mesh(seg_meshes[seg]))
-#     frame_meshes.append(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=hand_joints[0,joint]))
+frame_meshes = []
+seg_wires = []
+for seg, joint in seg_map:
+    seg_wires.append(o3d.geometry.LineSet.create_from_triangle_mesh(seg_meshes[seg]))
+    frame_meshes.append(o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.01, origin=hand_joints[0,joint]))
 
-# o3d.visualization.draw_geometries(seg_wires + frame_meshes + [frame])
+o3d.visualization.draw_geometries(seg_wires + frame_meshes + [frame])
 
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
 
@@ -119,14 +120,39 @@ def write_vrml(name: str, mesh: o3d.geometry.TriangleMesh):
 
         f.write('\t}\n}\n')
 
+os.makedirs(f'{DEXYCB_SUBJECT}/iv', exist_ok=True)
 
-# translate hand parts back
+# copy iv xml files
+for seg in seg_names: shutil.copy(f'iv_xmls/{seg}.xml', f'{DEXYCB_SUBJECT}/iv/')
+
+# translate hand parts back and generate VRML
 for seg, joint in seg_map:
     pos = hand_joints[0,joint]
     print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
     seg_meshes[seg].translate(-pos)
     print(f' - new centre: {seg_meshes[seg].get_center()}')
     # o3d.io.write_triangle_mesh(f'{seg_names[seg]}.obj', seg_meshes[seg], print_progress=True)
-    write_vrml(f'{seg_names[seg]}.wrl', seg_meshes[seg])
+    write_vrml(f'{DEXYCB_SUBJECT}/iv/{seg_names[seg]}.wrl', seg_meshes[seg])
+
+finger_bases = {'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17, 'thumb': 1}
+
+def rotation_matrix(x, y, z) -> np.array:
+    sx, sy, sz = np.sin([x, y, z])
+    cx, cy, cz = np.cos([x, y, z])
+    return np.array([
+        [cz*cy, cz*sy*sx - sz*cx, cz*sy*cx + sz*sx],
+        [sz*cy, sz*sy*sx + cz*cx, sz*sy*cx - cz*sx],
+        [-sy, cy*sx, cy*cx]
+    ])
+
+# calculate translation and rotation matrix for fingers
+from collections import defaultdict
+fields = defaultdict(lambda: '...')
+for finger in finger_bases:
+    fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in hand_joints[0, finger_bases[finger]].tolist())
+    fields[f'{finger}R'] = ' '.join(f'{x:.18f}' for x in rotation_matrix(-np.pi / 2, 0, 0).reshape(-1).tolist())
+
+with open('descriptor_template.xml', 'r') as f: template = f.read()
+with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.xml', 'w') as f: f.write(template.format_map(fields))
 
 # o3d.visualization.draw_geometries(seg_meshes + [frame])

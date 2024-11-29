@@ -1,3 +1,4 @@
 .conda/
 *.obj
 *.wrl
+mano_*/
