@@ -100,11 +100,16 @@ o3d.visualization.draw_geometries(seg_wires + frame_meshes + [frame])
 
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
 
-def write_vrml(name: str, mesh: o3d.geometry.TriangleMesh):
+def write_vrml(name: str, mesh: o3d.geometry.TriangleMesh, color = None):
     with open(name, 'w') as f:
         f.write('#VRML V2.0 utf8\n#material plastic\n#mass 150.0\n\n') # initial lines
 
-        f.write('Shape {\n\tgeometry IndexedFaceSet {\n')
+        f.write('Shape {\n')
+        
+        if color:
+            f.write('\tappearance Appearance {\n\t\tmaterial Material {\n\t\t\tdiffuseColor ' + ' '.join(str(x) for x in color) + '\n\t\t}\n\t}\n')
+
+        f.write('\tgeometry IndexedFaceSet {\n')
 
         # coord Coordinate
         f.write('\t\tcoord Coordinate {\n\t\t\tpoint [\n')
@@ -132,7 +137,7 @@ for seg, joint in seg_map:
     seg_meshes[seg].translate(-pos)
     print(f' - new centre: {seg_meshes[seg].get_center()}')
     # o3d.io.write_triangle_mesh(f'{seg_names[seg]}.obj', seg_meshes[seg], print_progress=True)
-    write_vrml(f'{DEXYCB_SUBJECT}/iv/{seg_names[seg]}.wrl', seg_meshes[seg])
+    write_vrml(f'{DEXYCB_SUBJECT}/iv/{seg_names[seg]}.wrl', seg_meshes[seg], palette[seg])
 
 finger_bases = {'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17, 'thumb': 1}
 
