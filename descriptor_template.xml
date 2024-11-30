@@ -151,8 +151,8 @@
             <d>0</d>
             <a>0</a>
             <alpha>90</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-40</minValue>
+            <maxValue>40</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -160,8 +160,8 @@
             <d>0</d>
             <a>{index0_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -169,8 +169,8 @@
             <d>0</d>
             <a>{index1_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -178,8 +178,8 @@
             <d>0</d>
             <a>{index2_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <link dynamicJointType="Universal">index1.xml</link>
@@ -196,8 +196,8 @@
             <d>0</d>
             <a>0</a>
             <alpha>90</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-40</minValue>
+            <maxValue>40</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -205,8 +205,8 @@
             <d>0</d>
             <a>{mid0_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -214,8 +214,8 @@
             <d>0</d>
             <a>{mid1_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -223,8 +223,8 @@
             <d>0</d>
             <a>{mid2_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <link dynamicJointType="Universal">mid1.xml</link>
@@ -241,8 +241,8 @@
             <d>0</d>
             <a>0</a>
             <alpha>90</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-40</minValue>
+            <maxValue>40</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -250,8 +250,8 @@
             <d>0</d>
             <a>{ring0_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -259,8 +259,8 @@
             <d>0</d>
             <a>{ring1_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -268,8 +268,8 @@
             <d>0</d>
             <a>{ring2_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <link dynamicJointType="Universal">ring1.xml</link>
@@ -286,8 +286,8 @@
             <d>0</d>
             <a>0</a>
             <alpha>90</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-40</minValue>
+            <maxValue>40</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -295,8 +295,8 @@
             <d>0</d>
             <a>{pinky0_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -304,8 +304,8 @@
             <d>0</d>
             <a>{pinky1_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -313,8 +313,8 @@
             <d>0</d>
             <a>{pinky2_r}</a>
             <alpha>0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <link dynamicJointType="Universal">pinky1.xml</link>
@@ -331,8 +331,8 @@
             <d>0.0</d>
             <a>0.0</a>
             <alpha>90.0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-40</minValue>
+            <maxValue>40</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -340,8 +340,8 @@
             <d>0.0</d>
             <a>52.1193</a>
             <alpha>44.0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -349,8 +349,8 @@
             <d>0.0</d>
             <a>40.7638</a>
             <alpha>0.0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
@@ -358,8 +358,8 @@
             <d>0.0</d>
             <a>0.0</a>
             <alpha>90.0</alpha>
-            <minValue>-120</minValue>
-            <maxValue>120</maxValue>
+            <minValue>-90</minValue>
+            <maxValue>10</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <link dynamicJointType="Universal">thumb1.xml</link>
