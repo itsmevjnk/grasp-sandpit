@@ -150,7 +150,7 @@
             <theta>d0</theta>
             <d>0</d>
             <a>0</a>
-            <alpha>-90</alpha>
+            <alpha>90</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
