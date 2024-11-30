@@ -1,3 +1,4 @@
+from itertools import chain
 import torch
 from manopth.manolayer import ManoLayer
 from manopth import demo
@@ -56,7 +57,7 @@ palette = [
     ]
 ]
 
-frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
 # show each segment
 seg_meshes = []
 for seg in colours:
@@ -67,7 +68,7 @@ for seg in colours:
     mesh.compute_vertex_normals(); mesh.paint_uniform_color(palette[seg])
     seg_meshes.append(mesh)
 
-o3d.visualization.draw_geometries(seg_meshes + [frame])
+# o3d.visualization.draw_geometries(seg_meshes + [frame])
 
 # colours:
 # 0 = ring MCP-PIP
@@ -139,32 +140,80 @@ def rotation_matrix(x, y, z) -> np.array:
         [sz*cy, sz*sy*sx + cz*cx, sz*sy*cx - cz*sx],
         [-sy, cy*sx, cy*cx]
     ])
+
+finger_bases = {'thumb': 1, 'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17}
+joint_to_finger_idx = \
+    [None] \
+    + list(chain(*[[(finger, i) for i in range(4)] for finger in finger_bases]))
+
+# finger_align_mats = {name: [] for name in finger_bases} # matrix for aligning each finger to X-
+
+# https://stackoverflow.com/a/59204638
+def rotation_matrix_from_vectors(vec1, vec2):
+    """ Find the rotation matrix that aligns vec1 to vec2
+    :param vec1: A 3d "source" vector
+    :param vec2: A 3d "destination" vector
+    :return mat: A transform matrix (3x3) which when applied to vec1, aligns it with vec2.
+    """
+    a, b = (vec1 / np.linalg.norm(vec1)).reshape(3), (vec2 / np.linalg.norm(vec2)).reshape(3)
+    v = np.cross(a, b)
+    c = np.dot(a, b)
+    s = np.linalg.norm(v)
+    kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+    rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
+    return rotation_matrix
+
 rx = rotation_matrix(np.pi, 0, 0) # rotation matrix to use below
 
+# create rotated joint positions
+hand_joints_rot = rx.dot(hand_joints[0].detach().cpu().numpy().T).T
+# hand_joints_rot -= hand_joints_rot[0]
+
+# fields for writing into descriptor
+from collections import defaultdict
+fields = defaultdict(lambda: '0')
+
 # translate hand parts back and generate VRML
+link_lengths = dict() # TODO: is this needed?
 for seg, joint in seg_map:
     pos = hand_joints[0,joint]
-    print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
+    # print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
     if joint != 0: # rotate hand part
         seg_meshes[seg].rotate(rx, center=(0, 0, 0))
         pos = rx.dot(pos)
     seg_meshes[seg].translate(-pos)
+    if joint != 0:
+        finger, idx = joint_to_finger_idx[joint]
+        if finger != 'thumb': # TODO: thumb
+            # straighten fingers (by aligning their vectors to X-)
+            vect = hand_joints_rot[joint + 1] - hand_joints_rot[joint]
+            straight_rot = rotation_matrix_from_vectors(vect, np.array([-1, 0, 0]))
+            seg_meshes[seg].rotate(straight_rot, center=(0, 0, 0))
+
+            length = np.sqrt(vect.dot(vect)) # finger length
+            seg_meshes[seg].translate((length, 0, 0)) # move fingers back towards palm
+
+            # if finger == 'pinky':
+            #     o3d.visualization.draw_geometries([seg_meshes[seg], frame])
     # if joint != 0: seg_meshes[seg].rotate(seg_meshes[seg].get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))) # flip
-    print(f' - new centre: {seg_meshes[seg].get_center()}')
+    # print(f' - new centre: {seg_meshes[seg].get_center()}')
     # o3d.io.write_triangle_mesh(f'{seg_names[seg]}.obj', seg_meshes[seg], print_progress=True)
     write_vrml(f'{DEXYCB_SUBJECT}/iv/{seg_names[seg]}.wrl', seg_meshes[seg], palette[seg])
 
-finger_bases = {'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17, 'thumb': 1}
-
-
-# calculate translation and rotation matrix for fingers
-from collections import defaultdict
-fields = defaultdict(lambda: '...')
+# calculate translation and rotation matrix for fingers (and also DH params)
 wrist_pos = hand_joints[0, 0]
-for finger in finger_bases:
-    fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in (hand_joints[0, finger_bases[finger]] - wrist_pos).tolist())
-    fields[f'{finger}R'] = ' '.join(f'{x:.18f}' for x in rotation_matrix(-np.pi / 2, 0, 0).reshape(-1).tolist())
+base_rot = ' '.join(f'{x:.18f}' for x in rotation_matrix(-np.pi / 2, 0, 0).reshape(-1).tolist()) # rotation matrix for chain base
+for finger in finger_bases: # NOTE: last matrix is the first transformation!
+    mcp = finger_bases[finger]
+    fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in (hand_joints[0, mcp] - wrist_pos).tolist())
+    fields[f'{finger}R'] = base_rot
 
+    # mats = finger_align_mats[finger]
+    # for i in range(3):
+    #     vect = hand_joints[0, mcp + i + 1] - hand_joints[0, mcp + i] # MCP-PIP, PIP-DIP, DIP-TIP (or CMC-MCP, MCP-IP, IP-TIP for thumb)
+    #     mats.append(rotation_matrix_from_vectors(vect, np.array([-1, 0, 0])))
+
+# write descriptor
 with open('descriptor_template.xml', 'r') as f: template = f.read()
 with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.xml', 'w') as f: f.write(template.format_map(fields))
 
