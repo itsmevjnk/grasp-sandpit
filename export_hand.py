@@ -162,13 +162,6 @@ def rotation_matrix_from_vectors(vec1, vec2):
     kmat = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
     rotation_matrix = np.eye(3) + kmat + kmat.dot(kmat) * ((1 - c) / (s ** 2))
     return rotation_matrix
-
-rx = rotation_matrix(np.pi, 0, 0) # rotation matrix to use below
-
-# create rotated joint positions
-hand_joints_rot = rx.dot(hand_joints[0].detach().cpu().numpy().T).T
-# hand_joints_rot -= hand_joints_rot[0]
-
 # fields for writing into descriptor
 from collections import defaultdict
 fields = defaultdict(lambda: '0')
@@ -177,15 +170,12 @@ fields = defaultdict(lambda: '0')
 for seg, joint in seg_map:
     pos = hand_joints[0,joint]
     # print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
-    if joint != 0: # rotate hand part
-        seg_meshes[seg].rotate(rx, center=(0, 0, 0))
-        pos = rx.dot(pos)
     seg_meshes[seg].translate(-pos)
     if joint != 0:
         finger, idx = joint_to_finger_idx[joint]
         if finger != 'thumb': # TODO: thumb
             # straighten fingers (by aligning their vectors to X-)
-            vect = hand_joints_rot[joint + 1] - hand_joints_rot[joint]
+            vect = hand_joints[0, joint + 1] - hand_joints[0, joint]
             straight_rot = rotation_matrix_from_vectors(vect, np.array([-1, 0, 0]))
             seg_meshes[seg].rotate(straight_rot, center=(0, 0, 0))
 
@@ -203,7 +193,7 @@ for seg, joint in seg_map:
 
 # calculate translation and rotation matrix for fingers (and also DH params)
 wrist_pos = hand_joints[0, 0].clone(); hand_joints[0] -= wrist_pos # centre about wrist (as with 3D model)
-base_rot = ' '.join(f'{x:.18f}' for x in rotation_matrix(-np.pi / 2, 0, 0).reshape(-1).tolist()) # rotation matrix for chain base
+base_rot = ' '.join(f'{x:.18f}' for x in rotation_matrix(np.pi / 2, 0, 0).reshape(-1).tolist()) # rotation matrix for chain base
 for finger in finger_bases: # NOTE: last matrix is the first transformation!
     mcp = finger_bases[finger]
     fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in (hand_joints[0, mcp]).tolist())
