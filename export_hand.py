@@ -174,7 +174,6 @@ from collections import defaultdict
 fields = defaultdict(lambda: '0')
 
 # translate hand parts back and generate VRML
-link_lengths = dict() # TODO: is this needed?
 for seg, joint in seg_map:
     pos = hand_joints[0,joint]
     # print(f'seg {seg} ({seg_names[seg]}, joint {joint}) is at {pos}, current centre: {seg_meshes[seg].get_center()}')
@@ -193,6 +192,8 @@ for seg, joint in seg_map:
             length = np.sqrt(vect.dot(vect)) # finger length
             seg_meshes[seg].translate((length, 0, 0)) # move fingers back towards palm
 
+            fields[f'{finger}{idx}_r'] = f'{-length}'
+
             # if finger == 'pinky':
             #     o3d.visualization.draw_geometries([seg_meshes[seg], frame])
     # if joint != 0: seg_meshes[seg].rotate(seg_meshes[seg].get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))) # flip
@@ -201,12 +202,20 @@ for seg, joint in seg_map:
     write_vrml(f'{DEXYCB_SUBJECT}/iv/{seg_names[seg]}.wrl', seg_meshes[seg], palette[seg])
 
 # calculate translation and rotation matrix for fingers (and also DH params)
-wrist_pos = hand_joints[0, 0]
+wrist_pos = hand_joints[0, 0].clone(); hand_joints[0] -= wrist_pos # centre about wrist (as with 3D model)
 base_rot = ' '.join(f'{x:.18f}' for x in rotation_matrix(-np.pi / 2, 0, 0).reshape(-1).tolist()) # rotation matrix for chain base
 for finger in finger_bases: # NOTE: last matrix is the first transformation!
     mcp = finger_bases[finger]
-    fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in (hand_joints[0, mcp] - wrist_pos).tolist())
+    fields[f'{finger}T'] = ' '.join(f'{x:.18f}' for x in (hand_joints[0, mcp]).tolist())
     fields[f'{finger}R'] = base_rot
+
+    if finger != 'thumb': # TODO: thumb
+        origin = hand_joints[0, mcp] # origin of link
+        for i in range(3): # 3 links: MCP-PIP, PIP-DIP and DIP-TIP
+            vect = hand_joints[0, i + 1] - hand_joints[0, i] # link pointer vector
+            vect = rotation_matrix_from_vectors(vect, np.array([-1, 0, 0])).dot(vect) # straighten (as we just did above)
+            end = origin + vect # end point (e.g. PIP for MCP-PIP, whre origin is MCP)
+            
 
     # mats = finger_align_mats[finger]
     # for i in range(3):

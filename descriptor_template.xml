@@ -158,7 +158,7 @@
         <joint type="Revolute">
             <theta>d1</theta>
             <d>0</d>
-            <a>-43.19</a>
+            <a>{index0_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -167,7 +167,7 @@
         <joint type="Revolute">
             <theta>d2</theta>
             <d>0</d>
-            <a>-29.56</a>
+            <a>{index1_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -176,7 +176,7 @@
         <joint type="Revolute">
             <theta>d3</theta>
             <d>0</d>
-            <a>-25.35</a>
+            <a>{index2_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -203,7 +203,7 @@
         <joint type="Revolute">
             <theta>d5</theta>
             <d>0</d>
-            <a>-46.20</a>
+            <a>{mid0_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -212,7 +212,7 @@
         <joint type="Revolute">
             <theta>d6</theta>
             <d>0</d>
-            <a>-30.99</a>
+            <a>{mid1_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -221,7 +221,7 @@
         <joint type="Revolute">
             <theta>d7</theta>
             <d>0</d>
-            <a>-29.20</a>
+            <a>{mid2_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -248,7 +248,7 @@
         <joint type="Revolute">
             <theta>d9</theta>
             <d>0</d>
-            <a>-39.12</a>
+            <a>{ring0_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -257,7 +257,7 @@
         <joint type="Revolute">
             <theta>d10</theta>
             <d>0</d>
-            <a>-28.31</a>
+            <a>{ring1_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -266,7 +266,7 @@
         <joint type="Revolute">
             <theta>d11</theta>
             <d>0</d>
-            <a>-24.48</a>
+            <a>{ring2_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -293,7 +293,7 @@
         <joint type="Revolute">
             <theta>d13</theta>
             <d>0</d>
-            <a>-29.91</a>
+            <a>{pinky0_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -302,7 +302,7 @@
         <joint type="Revolute">
             <theta>d14</theta>
             <d>0</d>
-            <a>-21.10</a>
+            <a>{pinky1_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
@@ -311,7 +311,7 @@
         <joint type="Revolute">
             <theta>d15</theta>
             <d>0</d>
-            <a>-23.16</a>
+            <a>{pinky2_r}</a>
             <alpha>0</alpha>
             <minValue>-120</minValue>
             <maxValue>120</maxValue>
