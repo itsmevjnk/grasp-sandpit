@@ -217,3 +217,36 @@ with open('descriptor_template.xml', 'r') as f: template = f.read()
 with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.xml', 'w') as f: f.write(template.format_map(fields))
 
 # o3d.visualization.draw_geometries(seg_meshes + [frame])
+
+# build homogeneous transformation matrix (4x4)
+def make_4x4trans(trans, rot):
+    return np.vstack((
+        np.hstack((rot, trans.T)),
+        np.array([0, 0, 0, 1])
+    ))
+
+# calculate DH parameters for entire chain.
+# the chain is given as a list of tuples ([x, y, z], [a, b, c]) where the first array is the expected joint frame position, and the second array is the Z (rotation) vector's unit vector.
+# this function returns a tuple of form (base_rotation_matrix, [(d, theta, a, alpha)])
+def build_chain(chain):
+    # calculate rotation matrix to align origin with 1st joint (base)
+    base_rotation_matrix = rotation_matrix_from_vectors(np.array([0, 0, 1]), np.array(chain[0][1]))
+
+    # frame = make_4x4trans(chain[0][0], base_rotation_matrix)
+    parameters = [] # list of DH parameters
+    origin = chain[0][0] # current joint's origin position
+    z1 = chain[0][1] # current joint's Z axis vector
+    x1 = base_rotation_matrix[0,:].T # current joint's X axis vector
+    for i in range(len(chain) - 1):
+        z2 = chain[i + 1][1] # next joint's Z axis
+
+        x2 = np.cross(z2, z1) # common normal (also new X axis vector)
+        if np.all(np.isclose(x2, [0, 0, 0])): # zero - Z axes are parallel
+            # TODO
+            pass
+        else: # calculate common normal coordinates (on z1 and z2)
+            A = np.vstack((z1 * z1, -z1 * z2))[:, 0:2].T
+            B = (chain[i + 1][0] - chain[i][0])[:2].T
+            X = np.linalg.inv(A).dot(B) # X contains the multipliers to retrieve common normal end point coordinates (order: z1, z2)
+            new_origin = chain[i + 1][0] + X[1] * z2 # get new origin coordinates
+            
