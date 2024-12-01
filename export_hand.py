@@ -57,7 +57,6 @@ palette = [
     ]
 ]
 
-frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=50)
 # show each segment
 seg_meshes = []
 for seg in colours:
@@ -183,7 +182,8 @@ for seg, joint in seg_map:
             seg_meshes[seg].translate((length, 0, 0)) # move fingers back towards palm
 
             fields[f'{finger}{idx}_r'] = f'{-length}'
-
+        else:
+            if idx == 0: seg_meshes[seg].rotate(rotation_matrix(0, np.pi / 2, np.pi), center=(0, 0, 0)) # align CMC-MCP segment
             # if finger == 'pinky':
             #     o3d.visualization.draw_geometries([seg_meshes[seg], frame])
     # if joint != 0: seg_meshes[seg].rotate(seg_meshes[seg].get_rotation_matrix_from_xyz((-np.pi / 2, 0, 0))) # flip

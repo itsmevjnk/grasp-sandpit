@@ -336,10 +336,10 @@
             <viscousFriction>5.0e+7</viscousFriction>
         </joint>
         <joint type="Revolute">
-            <theta>d17</theta>
+            <theta>d17+90</theta>
             <d>0.0</d>
             <a>52.1193</a>
-            <alpha>44.0</alpha>
+            <alpha>90</alpha>
             <minValue>-10</minValue>
             <maxValue>90</maxValue>
             <viscousFriction>5.0e+7</viscousFriction>
