@@ -2,3 +2,4 @@
 *.obj
 *.wrl
 mano_*/
+*.urdf
