@@ -18,12 +18,12 @@ with open(f'{DEXYCB_PATH}/calibration/{DEXYCB_SUBJECT}/mano.yml') as f: mano_bet
 
 mano_layer = ManoLayer(mano_root=MANO_MODELS_PATH, use_pca=True, ncomps=45, side=DEXYCB_SUBJECT.split('_')[-1]) # DexYCB uses 45 PCA components; flat_hand_mean=True by default which creates flat hand for zero thetas
 
-faces_np = mano_layer.th_faces.detach().cpu().numpy()
+faces = mano_layer.th_faces.detach().cpu().numpy()
 sealed_faces = np.load('sealed_faces.npy', allow_pickle=True).item() # NOTE: this only supports right hand!
 # faces_np = sealed_faces['sealed_faces_right'] # they're the same, but the one from sealed_faces is sealed (first 1538 faces are the same)
 
 # generate list of face indices matching colours
-face_colours = sealed_faces['sealed_faces_color_right'][:len(faces_np)]
+face_colours = sealed_faces['sealed_faces_color_right'][:len(faces)]
 colours = { id: np.where(face_colours == id) for id in np.unique(face_colours) }
 
 # create hand
@@ -39,18 +39,59 @@ hand_joints /= 100
 
 finger_bases = {'thumb': 1, 'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17}
 
-with open(f'{DEXYCB_SUBJECT}.urdf', 'w') as f:
-    f.write(f'<?xml version="1.0"?>\n<robot name="{DEXYCB_SUBJECT}">\n')
+os.makedirs(f'{DEXYCB_SUBJECT}/models', exist_ok=True)
 
-    links = [
-        'palm',
-        'index0b', 'index0a', 'index0f', 'index1', 'index2', 'index3',
-        'mid0b', 'mid0a', 'mid0f', 'mid1', 'mid2', 'mid3',
-        'ring0b', 'ring0a', 'ring0f', 'ring1', 'ring2', 'mid3',
-        'pinky0b', 'pinky0a', 'pinky0f', 'pinky1', 'pinky2', 'mid3',
-        'thumb0b', 'thumb0f', 'thumb0a', 'thumb1', 'thumb2', 'thumb3'
+# colour mapping
+palette = [
+    [x / 255 for x in bytes.fromhex(h)]
+    for h in [
+        '000000', '0000AA', '00AA00', '00AAAA',
+        'AA0000', 'AA00AA', 'AA5500', 'AAAAAA',
+        '555555', '5555FF', '55FF55', '55FFFF',
+        'FF5555', 'FF55FF', 'FFFF55', 'FFFFFF'
     ]
-    for link in links: f.write(f'<link name="{link}"><geometry><sphere radius="0.5"/></geometry></link>\n') # TODO: geometry
+]
+
+# break down MANO model into segments
+seg_meshes = []
+for seg in colours:
+    mesh = o3d.geometry.TriangleMesh()
+    mesh.vertices = o3d.utility.Vector3dVector(hand_verts)
+    mesh.triangles = o3d.utility.Vector3iVector(faces[colours[seg]])
+    mesh.remove_unreferenced_vertices() # clean up vertices
+    mesh.compute_vertex_normals(); mesh.paint_uniform_color(palette[seg])
+    seg_meshes.append(mesh)
+
+# colours:
+# 0 = ring MCP-PIP
+# 1 = index PIP-DIP
+# 2 = pinky MCP-PIP
+# 3 = middle MCP-PIP
+# 4 = middle DIP-TIP
+# 5 = ring DIP-TIP
+# 6 = pinky DIP-TIP
+# 7 = thumb CMC-MCP
+# 8 = palm
+# 9 = thumb MCP-IP
+# 10 = index MCP-PIP
+# 11 = index DIP-TIP
+# 12 = thumb IP-TIP
+# 13 = pinky PIP-DIP
+# 14 = middle PIP-DIP
+# 15 = ring PIP-DIP
+seg_names = ['ring1', 'index2', 'pinky1', 'mid1', 'mid3', 'ring3', 'pinky3', 'thumb1', 'palm', 'thumb2', 'index1', 'index3', 'thumb3', 'pinky2', 'mid2', 'ring2']
+
+seg_map = list(enumerate([13, 6, 17, 9, 11, 15, 19, 1, 0, 2, 5, 7, 3, 18, 10, 14]))
+
+for seg, joint in seg_map:
+    pos = hand_joints[joint]
+    seg_meshes[seg].translate(-hand_joints[joint])
+    o3d.io.write_triangle_mesh(f'{DEXYCB_SUBJECT}/models/{seg_names[seg]}.stl', seg_meshes[seg])
+
+# write URDF file
+with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
+    f.write(f'<?xml version="1.0"?>\n<robot name="{DEXYCB_SUBJECT}">\n')
+    f.write('<link name="palm"><geometry><mesh filename="file://models/palm.stl"/></geometry></link>\n')
 
     for finger in finger_bases:
         prev_origin = hand_joints[0] # previous origin - we start from wrist
@@ -63,6 +104,7 @@ with open(f'{DEXYCB_SUBJECT}.urdf', 'w') as f:
             is_thumb = finger == 'thumb'
             if i == 0: # first joint - we actually have 2 joints, a(dduction/bduction) and f(lex), and also the fixed base
                 joint += 'b' # base joint
+                f.write(f'<link name="{joint}"/>\n')
                 f.write(f'<joint name="{prev_joint}_{joint}" type="fixed">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                 f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
                 f.write('</joint>\n')
@@ -76,6 +118,7 @@ with open(f'{DEXYCB_SUBJECT}.urdf', 'w') as f:
                     joint = f'{finger}{i}a' # abduction
                     f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
 
+                f.write(f'<link name="{joint}"/>\n')
                 prev_joint = joint
 
                 if is_thumb:
@@ -84,11 +127,15 @@ with open(f'{DEXYCB_SUBJECT}.urdf', 'w') as f:
                 else:
                     joint = f'{finger}{i}f'
                     f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/><axis xyz="0 0 1"/></joint>\n')
+            
+                f.write(f'<link name="{joint}"><geometry><mesh filename="file://models/{finger}1.stl"/></geometry></link>\n')
             elif i == 3: # last joint (tip)
+                f.write(f'<link name="{joint}"/>\n')
                 f.write(f'<joint name="{prev_joint}_{joint}" type="fixed">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                 f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
                 f.write('</joint>\n')
             else: # next joints
+                f.write(f'<link name="{joint}"><geometry><mesh filename="file://models/{finger}{i+1}.stl"/></geometry></link>\n')
                 if finger != 'thumb': # next joints are simpler
                     f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                     f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
