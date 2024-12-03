@@ -35,7 +35,7 @@ hand_verts, hand_joints = mano_layer(pose_m, torch.from_numpy(np.array([mano_bet
 hand_verts = hand_verts[0].detach().cpu().numpy() # first one in batch
 hand_joints = hand_joints[0].detach().cpu().numpy()
 
-hand_joints /= 100
+hand_verts /= 1000; hand_joints /= 1000 # convert to metres
 
 finger_bases = {'thumb': 1, 'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17}
 
@@ -85,13 +85,15 @@ seg_map = list(enumerate([13, 6, 17, 9, 11, 15, 19, 1, 0, 2, 5, 7, 3, 18, 10, 14
 
 for seg, joint in seg_map:
     pos = hand_joints[joint]
-    seg_meshes[seg].translate(-hand_joints[joint])
+    seg_meshes[seg].translate(-pos)
     o3d.io.write_triangle_mesh(f'{DEXYCB_SUBJECT}/models/{seg_names[seg]}.stl', seg_meshes[seg])
 
 # write URDF file
+MODEL_PKG = os.environ.get('MODEL_PKG', 'mano_urdf')
+MODELS_PATH = f'file://$(find {MODEL_PKG})/models'
 with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
     f.write(f'<?xml version="1.0"?>\n<robot name="{DEXYCB_SUBJECT}">\n')
-    f.write('<link name="palm"><geometry><mesh filename="file://models/palm.stl"/></geometry></link>\n')
+    f.write(f'<link name="palm"><visual><geometry><mesh filename="{MODELS_PATH}/palm.stl"/></geometry></visual></link>\n')
 
     for finger in finger_bases:
         prev_origin = hand_joints[0] # previous origin - we start from wrist
@@ -113,37 +115,37 @@ with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
 
                 if is_thumb: # thumb would have flex before adduction
                     joint = f'{finger}{i}f' # flex
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="-1 0 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="-1 0 0"/></joint>\n')
                 else:
                     joint = f'{finger}{i}a' # abduction
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
 
                 f.write(f'<link name="{joint}"/>\n')
                 prev_joint = joint
 
                 if is_thumb:
                     joint = f'{finger}{i}a'
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
                 else:
                     joint = f'{finger}{i}f'
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/><axis xyz="0 0 1"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/><axis xyz="0 0 1"/></joint>\n')
             
-                f.write(f'<link name="{joint}"><geometry><mesh filename="file://models/{finger}1.stl"/></geometry></link>\n')
+                f.write(f'<link name="{joint}"><visual><geometry><mesh filename="{MODELS_PATH}/{finger}1.stl"/></geometry></visual></link>\n')
             elif i == 3: # last joint (tip)
                 f.write(f'<link name="{joint}"/>\n')
                 f.write(f'<joint name="{prev_joint}_{joint}" type="fixed">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                 f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
                 f.write('</joint>\n')
             else: # next joints
-                f.write(f'<link name="{joint}"><geometry><mesh filename="file://models/{finger}{i+1}.stl"/></geometry></link>\n')
+                f.write(f'<link name="{joint}"><visual><geometry><mesh filename="{MODELS_PATH}/{finger}{i+1}.stl"/></geometry></visual></link>\n')
                 if finger != 'thumb': # next joints are simpler
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                     f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
                     f.write(f'<axis xyz="0 0 1"/></joint>\n')
                 else: # CMC-MCP / MCP-IP
                     cmc_mcp = hand_joints[finger_bases[finger] + i + 1] - origin # CMC-MCP vector
                     rot_axis = np.cross(cmc_mcp, np.array([0, -1, 0])); rot_axis /= np.sqrt(rot_axis.dot(rot_axis)) # rotation axis
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
                     f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
                     f.write(f'<axis xyz="' + ' '.join(f'{x:.18f}' for x in rot_axis.tolist()) + '"/></joint>\n')
 
