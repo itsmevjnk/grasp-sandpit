@@ -35,6 +35,12 @@ hand_verts, hand_joints = mano_layer(pose_m, torch.from_numpy(np.array([mano_bet
 hand_verts = hand_verts[0].detach().cpu().numpy() # first one in batch
 hand_joints = hand_joints[0].detach().cpu().numpy()
 
+# translate vertices and joints to centre at wrist
+wrist_pos = hand_joints[0]
+hand_verts -= wrist_pos; hand_joints -= wrist_pos
+
+np.save(f'{DEXYCB_SUBJECT}/zeros.npy', hand_joints) # zero positions
+
 hand_verts /= 1000; hand_joints /= 1000 # convert to metres
 
 finger_bases = {'thumb': 1, 'index': 5, 'mid': 9, 'ring': 13, 'pinky': 17}
