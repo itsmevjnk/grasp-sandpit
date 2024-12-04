@@ -90,7 +90,8 @@ for seg, joint in seg_map:
 
 # write URDF file
 MODEL_PKG = os.environ.get('MODEL_PKG', 'mano_urdf')
-MODELS_PATH = f'file://$(find {MODEL_PKG})/models'
+# MODELS_PATH = f'file://$(find {MODEL_PKG})/models'
+MODELS_PATH = f'package://{MODEL_PKG}/models'
 with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
     f.write(f'<?xml version="1.0"?>\n<robot name="{DEXYCB_SUBJECT}">\n')
     f.write(f'<link name="palm"><visual><geometry><mesh filename="{MODELS_PATH}/palm.stl"/></geometry></visual></link>\n')
@@ -105,21 +106,22 @@ with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
 
             is_thumb = finger == 'thumb'
             if i == 0: # first joint - we actually have 2 joints, a(dduction/bduction) and f(lex), and also the fixed base
-                joint += 'b' # base joint
-                f.write(f'<link name="{joint}"/>\n')
-                f.write(f'<joint name="{prev_joint}_{joint}" type="fixed">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
-                f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
-                f.write('</joint>\n')
+                # joint += 'b' # base joint
+                # f.write(f'<link name="{joint}"/>\n')
+                # f.write(f'<joint name="{prev_joint}_{joint}" type="fixed">\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n')
+                # f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/>\n')
+                # f.write('</joint>\n')
 
-                prev_joint = joint
+                # prev_joint = joint
 
                 if is_thumb: # thumb would have flex before adduction
                     joint = f'{finger}{i}f' # flex
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="-1 0 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n<axis xyz="-1 0 0"/>\n')
                 else:
                     joint = f'{finger}{i}a' # abduction
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n<axis xyz="0 -1 0"/>\n')
 
+                f.write(f'<origin xyz="' + ' '.join(f'{x:.18f}' for x in origin_offset.tolist()) + '"/></joint>\n')
                 f.write(f'<link name="{joint}"/>\n')
                 prev_joint = joint
 
