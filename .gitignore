@@ -3,3 +3,5 @@
 *.wrl
 mano_*/
 *.urdf
+cube*/
+dexycb_models/
