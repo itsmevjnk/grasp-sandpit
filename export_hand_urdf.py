@@ -133,10 +133,10 @@ with open(f'{DEXYCB_SUBJECT}/{DEXYCB_SUBJECT}.urdf', 'w') as f:
 
                 if is_thumb:
                     joint = f'{finger}{i}a'
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/>\n<axis xyz="0 -1 0"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/>\n<axis xyz="0 -1 0"/></joint>\n')
                 else:
                     joint = f'{finger}{i}f'
-                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><origin xyz="0 0 0"/><axis xyz="0 0 1"/></joint>\n')
+                    f.write(f'<joint name="{prev_joint}_{joint}" type="revolute">\n<limit effort="1000.0" velocity="0.5" lower="-1.57" upper="1.57"/>\n<parent link="{prev_joint}"/>\n<child link="{joint}"/><axis xyz="0 0 1"/></joint>\n')
             
                 f.write(f'<link name="{joint}"><visual><geometry><mesh filename="{MODELS_PATH}/{finger}1.stl"/></geometry></visual></link>\n')
             elif i == 3: # last joint (tip)
