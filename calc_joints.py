@@ -34,8 +34,8 @@ else:
 
     # create hand
     pose_m = np.load(f'{DEXYCB_PATH}/{DEXYCB_SEQUENCE}/{DEXYCB_CAMERA}/labels_{DEXYCB_FRAME:06d}.npz')['pose_m']
-    mano_thetas = torch.from_numpy(np.array([np.hstack((pose_m[0,:45], np.zeros(3)))], dtype=np.float32))
-    hand_trans = pose_m[0,45:].tolist()
+    mano_thetas = torch.from_numpy(np.array([pose_m[0,:48]], dtype=np.float32))
+    hand_trans = pose_m[0,48:].tolist()
     hand_verts, hand_joints = mano_layer(mano_thetas, mano_betas)
 
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
