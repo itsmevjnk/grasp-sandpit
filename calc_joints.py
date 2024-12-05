@@ -33,8 +33,10 @@ else:
     mano_layer = ManoLayer(mano_root=MANO_MODELS_PATH, use_pca=True, ncomps=45, side=DEXYCB_SUBJECT.split('_')[-1], flat_hand_mean=False) # DexYCB uses 45 PCA components; flat_hand_mean=False is used for DexYCB
 
     # create hand
-    pose_m = torch.from_numpy(np.array([np.hstack((np.load(f'{DEXYCB_PATH}/{DEXYCB_SEQUENCE}/{DEXYCB_CAMERA}/labels_{DEXYCB_FRAME:06d}.npz')['pose_m'][0,:45], np.zeros(3)))], dtype=np.float32))
-    hand_verts, hand_joints = mano_layer(pose_m, mano_betas)
+    pose_m = np.load(f'{DEXYCB_PATH}/{DEXYCB_SEQUENCE}/{DEXYCB_CAMERA}/labels_{DEXYCB_FRAME:06d}.npz')['pose_m']
+    mano_thetas = torch.from_numpy(np.array([np.hstack((pose_m[0,:45], np.zeros(3)))], dtype=np.float32))
+    hand_trans = pose_m[0,45:].tolist()
+    hand_verts, hand_joints = mano_layer(mano_thetas, mano_betas)
 
 # demo.display_hand({'verts': hand_verts, 'joints': hand_joints}, mano_faces=mano_layer.th_faces)
 # hand_verts /= 1000; hand_joints /= 1000 # important (for DexYCB at least - TODO: test with RGB-to-MANO)
@@ -68,8 +70,9 @@ URDF_JOINTS = {
 model_finger_vectors = np.array([xyz_to_array(read_joint(f'palm_{finger}{URDF_JOINTS[finger][0][1]}').find('./origin').attrib['xyz']) for finger in URDF_JOINTS])
 
 finger_vectors = np.array([hand_joints[URDF_JOINTS[finger][0][2][0]] - hand_joints[0] for finger in URDF_JOINTS])
-rot_matrix, rssd = scipy.spatial.transform.Rotation.align_vectors(model_finger_vectors, finger_vectors)
-rot_matrix = rot_matrix.as_matrix()
+hand_rot, rssd = scipy.spatial.transform.Rotation.align_vectors(model_finger_vectors, finger_vectors)
+rot_matrix = hand_rot.as_matrix()
+hand_orient = hand_rot.inv().as_quat().tolist()
 hand_joints = rot_matrix.dot(hand_joints.T).T # rotate to align with reference
 
 # calculate angle from a to b, given the rotational axis
@@ -164,7 +167,9 @@ for n, finger in enumerate(URDF_JOINTS.keys()):
         # frame = frame.dot(frame).dot(make_4x4trans(frame_rot, frame_trans)).dot(np.linalg.inv(frame))
 
         graspit_dofs[graspit_dof_bases[finger] + i] = ang.item()
-    
+
+print('Translation (XYZ)  : ' + ','.join([str(x) for x in hand_trans]))
+print('Orientation (XYZW) : ' + ','.join([str(x) for x in hand_orient]))    
 print('DoFs: ' + ','.join([str(x) for x in graspit_dofs]))
 
 # o3d.visualization.draw_geometries(frame_meshes)
